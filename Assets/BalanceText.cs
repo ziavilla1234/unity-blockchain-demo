@@ -13,25 +13,24 @@ public class BalanceText : MonoBehaviour
     void Start()
     {
         _text_balance = GetComponent<TextMeshProUGUI>();
-        Debug.Log("in start");
+        _text_balance.text = "";
     }
 
 
     void OnEnable()
     {
-        //_text_balance.text = $"in enable";
         Web3.OnBalanceChange += set_balance_text;
-        
+        Web3.OnLogout += on_logout;
+
     }
-
-
 
     void OnDisable()
     {
         Web3.OnBalanceChange -= set_balance_text;
-        //_text_balance.text = $"in disable";
+        Web3.OnLogout -= on_logout;
     }
-    void set_balance_text(double sol) => _text_balance.text = $"balance: {sol}";
+    void set_balance_text(double sol) => _text_balance.text = $"Balance: {sol} sol";
+    void on_logout() => _text_balance.text = "";
 
     // Update is called once per frame
     void Update()

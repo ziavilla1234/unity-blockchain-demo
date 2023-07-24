@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class MessageDisplayScreen : ScreenUIBase
 {
@@ -11,13 +12,12 @@ public class MessageDisplayScreen : ScreenUIBase
 
     public TextMeshProUGUI TitleText;
 
+    
 
     // Start is called before the first frame update
     void Start()
     {
         this.Id = ScreenUIBase.MessageDisplayScreenId;
-
-        
     }
 
     // Update is called once per frame
@@ -31,6 +31,7 @@ public class MessageDisplayScreen : ScreenUIBase
 
     public void SetMessageText(string text) => MessageInputField.text = text;
     public void SetTitleText(string text) => TitleText.text = text;
+    
 
     public void ShowScreen(string title, string text)
     {

@@ -13,20 +13,24 @@ public class PublicKeyText : MonoBehaviour
     void Start()
     {
         _text_public_key = GetComponent<TextMeshProUGUI>();
+        _text_public_key.text = "";
     }
 
 
     void OnEnable()
     {
-        Web3.OnLogin += set_public_key_text;
+        Web3.OnLogin += on_login;
+        Web3.OnLogout += on_logout;
     }
 
     void OnDisable()
     {
-        Web3.OnLogin -= set_public_key_text;
+        Web3.OnLogin -= on_login;
+        Web3.OnLogout -= on_logout;
     }
 
-    void set_public_key_text(Account account) => _text_public_key.text = account.PublicKey;
+    void on_login(Account account) => _text_public_key.text = $"Key: {account.PublicKey}";
+    void on_logout() => _text_public_key.text = "";
 
     // Update is called once per frame
     void Update()

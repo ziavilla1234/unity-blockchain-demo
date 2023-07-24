@@ -4,15 +4,18 @@ using UnityEngine;
 using TMPro;
 using Solana.Unity.SDK;
 using System.Text;
+using UnityEngine.UI;
+
 
 public class LoadNFT : MonoBehaviour
 {
-    
 
+    Button _button;
     // Start is called before the first frame update
     void Start()
     {
-        
+        _button = GetComponent<Button>();
+        _button.interactable = false;
     }
 
     // Update is called once per frame
@@ -20,6 +23,22 @@ public class LoadNFT : MonoBehaviour
     {
         
     }
+    void OnEnable()
+    {
+        Web3.OnLogin += on_login;
+        Web3.OnLogout += on_logout;
+    }
+
+    void OnDisable()
+    {
+        Web3.OnLogin -= on_login;
+        Web3.OnLogout -= on_logout;
+    }
+
+    void on_login(Solana.Unity.Wallet.Account account) => _button.interactable = true;
+    void on_logout() => _button.interactable = false;
+
+
 
     public bool _loading = false;
     public async void on_click()
@@ -27,8 +46,11 @@ public class LoadNFT : MonoBehaviour
         if (_loading is true) return;
 
         _loading = true;
+        _button.interactable = !_loading;
 
         GameManager.Instance.MessageDisplayScreen.ShowScreen("NFT LIST (wait)", "Loading...");
+        GameManager.Instance.MessageDisplayScreen.CanClose = false;
+
 
         var nfts = await Web3.LoadNFTs();
 
@@ -44,8 +66,10 @@ public class LoadNFT : MonoBehaviour
         }
 
         GameManager.Instance.MessageDisplayScreen.ShowScreen("NFT LIST", sb.ToString());
+        GameManager.Instance.MessageDisplayScreen.CanClose = true;
 
-        _loading = false;
+        _loading = true;
+        _button.interactable = !_loading;
     }
 
     
