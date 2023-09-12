@@ -11,29 +11,17 @@ namespace Assembly_CSharp
 {
     public abstract class ScreenUIBase : MonoBehaviour
     {
-
-        public const string MessageDisplayScreenId = "msgdsp";
-
-        public string Id { get; protected set; }
-
-        public Button CloseButton;
+        [SerializeField]
+        private Button _closeButton;
 
         public bool CanClose 
         { 
-            get { return CloseButton ? CloseButton.interactable : false; } 
-            set { if (CloseButton) { CloseButton.interactable = value; } } 
+            get { return _closeButton ? _closeButton.interactable : false; } 
+            set { if (_closeButton) { _closeButton.interactable = value; } } 
         }
 
 
-        public bool ShowScreen() => GameManager.Instance.ShowScreen(this);
-        public bool HideScreen()
-        {
-            if (this == GameManager.Instance.CurrentlyOpenedScreen)
-            {
-                GameManager.Instance.HideScreen();
-                return true;
-            }
-            return false;
-        }
+        public void ShowScreen() => this.gameObject.SetActive(true);
+        public void HideScreen() => this.gameObject.SetActive(false);
     }
 }
