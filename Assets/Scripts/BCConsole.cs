@@ -4,16 +4,30 @@ using Solana.Unity.Programs;
 using Solana.Unity.Rpc.Builders;
 using Solana.Unity.SDK;
 using Solana.Unity.Wallet;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using TABBB.Tools.Console;
+using Console = TABBB.Tools.Console.Console;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class BCConsole : MonoBehaviour
 {
     ValueNode<string> _public_key;
     ValueNode<string> _credits;
+
+    [SerializeField]
+    RawImage _nftImage;
+    [SerializeField]
+    Texture2D _defaultNftImage;
+
+    Panel _nftPanel;
+
+    List<Solana.Unity.SDK.Nft.Nft> _nfts;
+    
+
     // Start is called before the first frame update
     void Start()
     {
@@ -23,13 +37,22 @@ public class BCConsole : MonoBehaviour
         _public_key = panel.AddInfo("PublicKey", "0");
         _credits = panel.AddInfo("Credits", "0");
 
-        panel.AddButton("Editor Wallet", "Connect", connect_in_editor_wallet);
-        panel.AddButton("WebGL Wallet", "Connect", (x) => Web3.Instance.LoginWithWalletAdapter());
+        if(Application.isEditor)
+        {
+            panel.AddButton("Editor Wallet", "Connect", connect_in_editor_wallet);
+        }
+        else
+        {
+            panel.AddButton("WebGL Wallet", "Connect", connect_webgl_wallet);
+        }
 
-        Panel nftPanel = Console.I.AddPanel("NFTs");
+        _nftPanel = Console.I.AddPanel("NFTs");
+        
+        _nftPanel.AddButton("NFTs", "Get", get_nfts);
 
-        nftPanel.AddButton("NFTs", "Get", get_nfts);
-        nftPanel.AddButton("NFTs", "Mint", mint_nft);
+
+        Panel nftMintPanel = Console.I.AddPanel("NFT - MINT");
+        nftMintPanel.AddButton("NFTs", "Mint", mint_nft);
 
         Web3.OnLogin += (account) => { _public_key.SetValue($"{account.PublicKey}"); };
         Web3.OnLogout += () => { _public_key.SetValue(""); _credits.SetValue(""); };
@@ -78,16 +101,40 @@ public class BCConsole : MonoBehaviour
 
     async void connect_in_editor_wallet(ButtonValue buttonValue)
     {
+        if (Web3.Account != null)
+        {
+            Debug.Log("Already connected...");
+            return;
+        }
+
         string _pvt_key = "3xQiQAcZMMy5GMndckeJuBkEZNNmA52Bgm3jhLUNigVQfBXquQgdQTDbJdXW11FoPLQK1joBD7dv3MEFmyKAdtYA";
         string _pass = "monopoly";
         Account account = await Web3.Instance.CreateAccount(_pvt_key, _pass);
         Debug.Log(account != null ? "Connected successfully!" : "Failed to connect!");
     }
 
+    void connect_webgl_wallet(ButtonValue buttonValue)
+    {
+        if(Web3.Account != null)
+        {
+            Debug.Log("Already connected...");
+            return;
+        }
+        Web3.Instance.LoginWithWalletAdapter();
+    }
+
 
     bool _loading = false;
 
-
+    void clear_nft_list()
+    {
+        for (int i = 1; i < _nftPanel.nodes.Count; i++)
+        {
+            _nftPanel.nodes[i].instance.Destroy();
+        }
+        _nftPanel.nodes.RemoveRange(1, _nftPanel.nodes.Count - 1);
+        _nftImage.texture = _defaultNftImage;
+    }
     async void get_nfts(ButtonValue buttonValue)
     {
         if(Web3.Account == null)
@@ -100,14 +147,18 @@ public class BCConsole : MonoBehaviour
         if (_loading is true) return;
         _loading = true;
         
-        var nfts = await Web3.LoadNFTs();
-
+        _nfts = await Web3.LoadNFTs();
+        
         Debug.Log("Listing NFTs:");
-
-        for (int i = 0; i < nfts.Count; i++)
+        clear_nft_list();
+        for (int i = 0; i < _nfts.Count; i++)
         {
-            Debug.Log($"{i} - {nfts[i].metaplexData.data.mint}");
+            var nft = _nfts[i];
+            _nftPanel.AddButton($"NFT({i})", $"View {nft.metaplexData.data.metadata.name}", (x) => _nftImage.texture = nft.metaplexData.nftImage.file);
+
+            Debug.Log($"{i} - {nft.metaplexData.data.mint}");
         }
+        
 
         _loading = false;
     }
@@ -174,7 +225,7 @@ public class BCConsole : MonoBehaviour
                 Debug.Log($"Status: {minimumRent.HttpStatusCode.ToString()}");
                 Debug.Log($"Error?: {minimumRent?.ErrorData?.Error.ToString()}");
 
-                Debug.Log("Building transaction and sending it...");
+                Debug.Log("Building transaction...");
 
 
                 var transaction = new TransactionBuilder()
@@ -233,13 +284,23 @@ public class BCConsole : MonoBehaviour
 
                 var tx = Solana.Unity.Rpc.Models.Transaction.Deserialize(transaction.Build(new List<Account> { Web3.Account, mint }));
 
-                var res = await Web3.Wallet.SignAndSendTransaction(tx, true);
+                Debug.Log("Signing and sending transaction...");
 
-                Debug.Log($"Successful?: {res.WasSuccessful}");
-                Debug.Log($"Status: {res.HttpStatusCode}");
-                Debug.Log($"Reason: {res.Reason}");
-                Debug.Log($"Error?: {res?.ErrorData?.Error.ToString()}");
-                Debug.Log($"Key?: {res.Result}");
+                try
+                {
+                    var res = await Web3.Wallet.SignAndSendTransaction(tx, true);
+
+                    Debug.Log($"Successful?: {res.WasSuccessful}");
+                    Debug.Log($"Status: {res.HttpStatusCode}");
+                    Debug.Log($"Reason: {res.Reason}");
+                    Debug.Log($"Error?: {res?.ErrorData?.Error.ToString()}");
+                    Debug.Log($"Key?: {res.Result}");
+                }
+                catch(Exception ex)
+                {
+                    Debug.Log($"Successful: False");
+                    Debug.Log($"Error: {ex.Message}");
+                }
             }
         }
 
