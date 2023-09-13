@@ -1,2 +1,2 @@
-# unity-blockchain-proto
-unity ludo blockchain project
+# unity-blockchain-demo
+unity ludo blockchain demo
