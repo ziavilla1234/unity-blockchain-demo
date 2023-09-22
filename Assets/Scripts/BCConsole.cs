@@ -37,14 +37,9 @@ public class BCConsole : MonoBehaviour
         _public_key = panel.AddInfo("PublicKey", "0");
         _credits = panel.AddInfo("Credits", "0");
 
-        if(Application.isEditor)
-        {
-            panel.AddButton("Editor Wallet", "Connect", connect_in_editor_wallet);
-        }
-        else
-        {
-            panel.AddButton("WebGL Wallet", "Connect", connect_webgl_wallet);
-        }
+        _ = Application.isEditor ? 
+            panel.AddButton("Editor Wallet", "Connect", connect_in_editor_wallet) : 
+            panel.AddButton("Mobile/WebGL Wallet", "Connect", connect_wallet_adapter);
 
         _nftPanel = Console.I.AddPanel("NFTs");
         
@@ -113,16 +108,22 @@ public class BCConsole : MonoBehaviour
         Debug.Log(account != null ? "Connected successfully!" : "Failed to connect!");
     }
 
-    void connect_webgl_wallet(ButtonValue buttonValue)
+    void connect_wallet_adapter(ButtonValue buttonValue)
     {
         if(Web3.Account != null)
         {
             Debug.Log("Already connected...");
             return;
         }
-        Web3.Instance.LoginWithWalletAdapter();
+        try
+        {
+            Web3.Instance.LoginWithWalletAdapter();
+        }
+        catch(Exception e)
+        {
+            Debug.LogError($"Failed to connect: {e.Message}");
+        }
     }
-
 
     bool _loading = false;
 
@@ -146,11 +147,13 @@ public class BCConsole : MonoBehaviour
         Debug.Log(_loading ? "Busy try again..." : "Loading NFTs...");
         if (_loading is true) return;
         _loading = true;
-        
+
+        clear_nft_list();
+
         _nfts = await Web3.LoadNFTs();
         
         Debug.Log("Listing NFTs:");
-        clear_nft_list();
+        
         for (int i = 0; i < _nfts.Count; i++)
         {
             var nft = _nfts[i];
@@ -190,12 +193,7 @@ public class BCConsole : MonoBehaviour
             creators = new List<Creator> { new(Web3.Account.PublicKey, 100, true) }
         };
 
-
-        //------------------------------------
-
-
-        Debug.Log("Info:");
-        Debug.Log("Trying to get blockchain hash...");
+        Debug.Log("Trying to get recent blockchain hash...");
 
 
         var blockHash = await Web3.Rpc.GetLatestBlockHashAsync();
@@ -203,105 +201,95 @@ public class BCConsole : MonoBehaviour
 
         if (!blockHash.WasSuccessful)
         {
-            Debug.Log($"Failed: {blockHash.Reason}");
+            Debug.LogError($"Error: {blockHash.Reason}");
+            _loading = false;
+            return;
         }
 
-        if (blockHash.WasSuccessful)
+        Debug.Log("Trying to get rent for mint account...");
+
+        var minimumRent = await Web3.Rpc.GetMinimumBalanceForRentExemptionAsync(TokenProgram.MintAccountDataSize);
+
+
+        if (!minimumRent.WasSuccessful)
         {
-            Debug.Log("Trying to get min balance...");
+            Debug.LogError($"Error: {minimumRent.Reason}");
+            _loading = false;
+            return;
+        }
 
-            var minimumRent = await Web3.Rpc.GetMinimumBalanceForRentExemptionAsync(TokenProgram.MintAccountDataSize);
+        Debug.Log($"Rent: {minimumRent.Result}");
 
-
-            if (!minimumRent.WasSuccessful)
-            {
-                Debug.Log($"Failed: {minimumRent.Reason}");
-            }
-
-            if (minimumRent.WasSuccessful)
-            {
-                Debug.Log($"Reason: {minimumRent.Reason}");
-                Debug.Log($"Rent: {minimumRent.Result}");
-                Debug.Log($"Status: {minimumRent.HttpStatusCode.ToString()}");
-                Debug.Log($"Error?: {minimumRent?.ErrorData?.Error.ToString()}");
-
-                Debug.Log("Building transaction...");
+        Debug.Log("Building transaction...");
 
 
-                var transaction = new TransactionBuilder()
-                .SetRecentBlockHash(blockHash.Result.Value.Blockhash)
-                .SetFeePayer(Web3.Account)
-                .AddInstruction(
-                    SystemProgram.CreateAccount(
-                        Web3.Account,
-                        mint.PublicKey,
-                        minimumRent.Result,
-                        TokenProgram.MintAccountDataSize,
-                        TokenProgram.ProgramIdKey))
-                .AddInstruction(
-                    TokenProgram.InitializeMint(
-                        mint.PublicKey,
-                        0,
-                        Web3.Account,
-                        Web3.Account))
-                .AddInstruction(
-                    AssociatedTokenAccountProgram.CreateAssociatedTokenAccount(
-                        Web3.Account,
-                        Web3.Account,
-                        mint.PublicKey))
-                .AddInstruction(
-                    TokenProgram.MintTo(
-                        mint.PublicKey,
-                        associatedTokenAccount,
-                        1,
-                        Web3.Account))
-                .AddInstruction(
-                    MetadataProgram.CreateMetadataAccount(
-                    PDALookup.FindMetadataPDA(mint),
-                    mint.PublicKey,
-                    Web3.Account,
-                    Web3.Account,
-                    Web3.Account.PublicKey,
-                    metadata,
-                    TokenStandard.NonFungible,
-                    true,
-                    true,
-                    null,
-                    metadataVersion: MetadataVersion.V3))
-                .AddInstruction(MetadataProgram.CreateMasterEdition(
-                    maxSupply: null,
-                    masterEditionKey: PDALookup.FindMasterEditionPDA(mint),
-                    mintKey: mint,
-                    updateAuthorityKey: Web3.Account,
-                    mintAuthority: Web3.Account,
-                    payer: Web3.Account,
-                    metadataKey: PDALookup.FindMetadataPDA(mint),
-                    version: CreateMasterEditionVersion.V3)
-                );
+        var transaction = new TransactionBuilder()
+        .SetRecentBlockHash(blockHash.Result.Value.Blockhash)
+        .SetFeePayer(Web3.Account)
+        .AddInstruction(
+            SystemProgram.CreateAccount(
+                Web3.Account,
+                mint.PublicKey,
+                minimumRent.Result,
+                TokenProgram.MintAccountDataSize,
+                TokenProgram.ProgramIdKey))
+        .AddInstruction(
+            TokenProgram.InitializeMint(
+                mint.PublicKey,
+                0,
+                Web3.Account,
+                Web3.Account))
+        .AddInstruction(
+            AssociatedTokenAccountProgram.CreateAssociatedTokenAccount(
+                Web3.Account,
+                Web3.Account,
+                mint.PublicKey))
+        .AddInstruction(
+            TokenProgram.MintTo(
+                mint.PublicKey,
+                associatedTokenAccount,
+                1,
+                Web3.Account))
+        .AddInstruction(
+            MetadataProgram.CreateMetadataAccount(
+            PDALookup.FindMetadataPDA(mint),
+            mint.PublicKey,
+            Web3.Account,
+            Web3.Account,
+            Web3.Account.PublicKey,
+            metadata,
+            TokenStandard.NonFungible,
+            true,
+            true,
+            null,
+            metadataVersion: MetadataVersion.V3))
+        .AddInstruction(MetadataProgram.CreateMasterEdition(
+            maxSupply: null,
+            masterEditionKey: PDALookup.FindMasterEditionPDA(mint),
+            mintKey: mint,
+            updateAuthorityKey: Web3.Account,
+            mintAuthority: Web3.Account,
+            payer: Web3.Account,
+            metadataKey: PDALookup.FindMetadataPDA(mint),
+            version: CreateMasterEditionVersion.V3)
+        );
 
 
-                //----------------------
+        //----------------------
 
-                var tx = Solana.Unity.Rpc.Models.Transaction.Deserialize(transaction.Build(new List<Account> { Web3.Account, mint }));
+        var tx = Solana.Unity.Rpc.Models.Transaction.Deserialize(transaction.Build(new List<Account> { Web3.Account, mint }));
 
-                Debug.Log("Signing and sending transaction...");
+        Debug.Log("Signing and sending transaction...");
 
-                try
-                {
-                    var res = await Web3.Wallet.SignAndSendTransaction(tx, true);
+        try
+        {
+            var res = await Web3.Wallet.SignAndSendTransaction(tx, true);
 
-                    Debug.Log($"Successful?: {res.WasSuccessful}");
-                    Debug.Log($"Status: {res.HttpStatusCode}");
-                    Debug.Log($"Reason: {res.Reason}");
-                    Debug.Log($"Error?: {res?.ErrorData?.Error.ToString()}");
-                    Debug.Log($"Key?: {res.Result}");
-                }
-                catch(Exception ex)
-                {
-                    Debug.Log($"Successful: False");
-                    Debug.Log($"Error: {ex.Message}");
-                }
-            }
+            Debug.Log($"Successful... Address: {res.Result}");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Failed... Error: {ex.Message}");
         }
 
         _loading = false;

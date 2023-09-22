@@ -214,6 +214,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 746544399}
     m_Modifications:
+    - target: {fileID: 9138994166247215468, guid: d5f5c07495d821048b9c0e19e001dfa7, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -0.00024414062
+      objectReference: {fileID: 0}
     - target: {fileID: 9138994166829051420, guid: d5f5c07495d821048b9c0e19e001dfa7, type: 3}
       propertyPath: awakeHidden
       value: 0
@@ -261,6 +265,34 @@ PrefabInstance:
     - target: {fileID: 9138994166829051423, guid: d5f5c07495d821048b9c0e19e001dfa7, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9138994167026586499, guid: d5f5c07495d821048b9c0e19e001dfa7, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9138994167026586499, guid: d5f5c07495d821048b9c0e19e001dfa7, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9138994167026586499, guid: d5f5c07495d821048b9c0e19e001dfa7, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9138994167026586499, guid: d5f5c07495d821048b9c0e19e001dfa7, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9138994167026586499, guid: d5f5c07495d821048b9c0e19e001dfa7, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: -250.00003
+      objectReference: {fileID: 0}
+    - target: {fileID: 9138994167026586499, guid: d5f5c07495d821048b9c0e19e001dfa7, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 124.999985
+      objectReference: {fileID: 0}
+    - target: {fileID: 9138994167518758681, guid: d5f5c07495d821048b9c0e19e001dfa7, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -18.077637
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -494,11 +526,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1172518523441077176}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 1}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -20, y: -20}
-  m_SizeDelta: {x: 500, y: 500}
-  m_Pivot: {x: 1, y: 1}
+  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMax: {x: 1, y: 0}
+  m_AnchoredPosition: {x: -20, y: 20}
+  m_SizeDelta: {x: 400, y: 400}
+  m_Pivot: {x: 1, y: 0}
 --- !u!114 &1061976170
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -579,7 +611,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b75a4e92c14884ea6bf3e46d07a33eb0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rpcCluster: 2
+  rpcCluster: 1
   customRpc: https://late-wild-film.solana-devnet.quiknode.pro/8374da8d09b67ce47c9307c1863212e5710b7c69/
   webSocketsRpc: 
   autoConnectOnStartup: 1
